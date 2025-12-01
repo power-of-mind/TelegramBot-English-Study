@@ -1,9 +1,11 @@
 import os
+
 import telebot
 import random
 from telebot import types, custom_filters
 from telebot.handler_backends import State, StatesGroup
 from telebot.storage import StateMemoryStorage
+
 from connection_db import get_db_connection
 from handlers_db import (
     initialize_db, ensure_user_exists, fill_common_words_table,
@@ -19,10 +21,10 @@ initialize_db()
 
 # Общие слова для обучения
 common_words = [
-    ('Peace', 'Мир'), ('Green', 'Зелёный'), ('White', 'Белый'),
-    ('Hello', 'Привет'), ('Car', 'Машина'), ('Sky', 'Небо'),
-    ('Tree', 'Дерево'), ('Book', 'Книга'), ('Love', 'Любовь'),
-    ('Friend', 'Друг')
+    ("Peace", "Мир"), ("Green", "Зелёный"), ("White", "Белый"),
+    ("Hello", "Привет"), ("Car", "Машина"), ("Sky", "Небо"),
+    ("Tree", "Дерево"), ("Book", "Книга"), ("Love", "Любовь"),
+    ("Friend", "Друг")
 ]
 
 # Заполнение общего словаря
@@ -34,14 +36,14 @@ print('Start telegram bot...')
 state_storage = StateMemoryStorage()
 
 # Создание объекта бота
-token_bot = os.getenv('TOKEN')
+token_bot = os.getenv("TOKEN")
 bot = telebot.TeleBot(token_bot, state_storage=state_storage)
 
 # Определение команд
 class Command:
-    ADD_WORD = 'Добавить слово ➕'
-    DELETE_WORD = 'Удалить слово 🔙'
-    NEXT = 'Следующее слово ➡️'
+    ADD_WORD = "Добавить слово ➕"
+    DELETE_WORD = "Удалить слово 🔙"
+    NEXT = "Следующее слово ➡️"
 
 # Определение состояний
 class MyStates(StatesGroup):
@@ -84,8 +86,8 @@ def create_cards(message):
     # Устанавливаем состояние для пользователя
     bot.set_state(user_id=message.from_user.id, chat_id=message.chat.id, state=MyStates.target_word)
     with bot.retrieve_data(user_id=message.from_user.id, chat_id=message.chat.id) as data:
-        data['target_word'] = target_word
-        data['translate_word'] = translate_word
+        data["target_word"] = target_word
+        data["translate_word"] = translate_word
 
     # Отправляем сообщение
     greeting = f"Выбери перевод слова:\n🇷🇺 {translate_word}"
@@ -104,23 +106,23 @@ def send_main_menu(chat_id):
 
 # Обработчики
 
-@bot.message_handler(commands=['start'])
+@bot.message_handler(commands=["start"])
 def send_welcome(message):
     cid = message.chat.id
-    username = message.chat.username or 'Unknown'
+    username = message.chat.username or "Unknown"
     ensure_user_exists(cid, username)
 
     print("Starting bot for the first time...")
 
     # Отправка стикера и приветствие
-    with open('sticker.png', 'rb') as sti:
+    with open("sticker.png", "rb") as sti:
         bot.send_sticker(cid, sti)
     bot.send_message(cid, f"Приветствую, {message.from_user.first_name}!\nЯ {bot.get_me().first_name}! "
                               f"Начнём учить язык 🇬🇧\nУ тебя есть возможность использовать тренажёр,\nкак конструктор, "
                               f"и собирать свою собственную базу для обучения.\nДля этого воспользуйся инструментами:\n"
                               f"- добавить слово ➕\n"
                               f"- удалить слово 🔙\n"
-                              f"Приступим ⬇️", parse_mode='html'
+                              f"Приступим ⬇️", parse_mode="html"
                          )
     create_cards(message)
 
@@ -146,7 +148,7 @@ def add_translate_word(message):
 
     # Сохраняем слово в состоянии
     with bot.retrieve_data(user_id=message.from_user.id, chat_id=cid) as data:
-        data['target_word'] = word
+        data["target_word"] = word
 
     bot.set_state(user_id=message.from_user.id, chat_id=cid, state=MyStates.saving_new_word)
     bot.send_message(cid, f"Теперь введите перевод для слова '{word}':")
@@ -164,7 +166,7 @@ def save_new_word(message):
     try:
         # Извлекаем данные из состояния
         with bot.retrieve_data(user_id=message.from_user.id, chat_id=cid) as data:
-            target_word = data.get('target_word').capitalize()
+            target_word = data.get("target_word").capitalize()
 
         if not target_word:
             bot.send_message(cid, "Ошибка! Попробуй снова начать со /start.")
@@ -207,7 +209,7 @@ def delete_word(message):
     bot.delete_state(user_id=message.from_user.id, chat_id=message.chat.id)
     send_main_menu(cid)
 
-@bot.message_handler(func=lambda message: True, content_types=['text'])
+@bot.message_handler(func=lambda message: True, content_types=["text"])
 def message_reply(message):
     user_response = message.text.strip()
     print(f"Ответ пользователя: {user_response}")
@@ -222,9 +224,9 @@ def message_reply(message):
 
     # Извлекаем данные из состояния
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        target_word = data.get('target_word')
-        translate_word = data.get('translate_word')
-        attempts = data.get('attempts', 0)
+        target_word = data.get("target_word")
+        translate_word = data.get("translate_word")
+        attempts = data.get("attempts", 0)
         print(f"Данные из состояний: target_word={target_word}, translate_word={translate_word}")
 
     if not target_word or not translate_word:
@@ -243,7 +245,7 @@ def message_reply(message):
 
     # Если пользователь ответил неправильно
     attempts += 1
-    data['attempts'] = attempts
+    data["attempts"] = attempts
     if attempts < 3:
         bot.send_message(
             message.chat.id, f"❌ Неправильно! Попробуй снова.\nПеревод слова: {translate_word}\n"
