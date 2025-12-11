@@ -16,10 +16,10 @@ db_port = os.getenv("DB_PORT")
 def get_db_connection():
     """Функция для создания подключения к базе данных."""
     conn = psycopg2.connect(
-        dbname=os.getenv("DB_NAME"),
-        user=os.getenv("DB_USER"),
-        password=os.getenv("DB_PASSWORD"),
-        host=os.getenv("DB_HOST"),
-        port=os.getenv("DB_PORT")
+        dbname=db_name,
+        user=db_user,
+        password=db_password,
+        host=db_host,
+        port=db_port
     )
     return conn
